@@ -20,7 +20,7 @@ execSync('npx esbuild src/core/index.ts --bundle --format=esm --outfile=tmp/core
   cwd: ROOT, stdio: 'inherit', shell: true
 });
 
-const { SAMPLES, render, layoutFlow, layoutSwim, layoutClass, buildDrawio, LAYOUTS } = await import(
+const { SAMPLES, render, layoutFlow, layoutSwim, layoutClass, layoutState, buildDrawio, LAYOUTS } = await import(
   pathToFileURL(path.join(ROOT, 'tmp/core.mjs')).href
 );
 
@@ -149,6 +149,44 @@ console.log('\n[7] 类图');
   chk('实现关系用空心三角', paths.filter(x => x.arrow === 'triHollow').length === 1);
   chk('组合关系用实心菱形（起点端）', paths.filter(x => x.startArrow === 'diamondFilled').length === 1);
   chk('虚线关系 = 1 条', paths.filter(x => x.dash).length === 1, paths.filter(x => x.dash).length);
+}
+
+/* ---------------- 8. 状态图 ---------------- */
+console.log('\n[8] 状态图');
+{
+  const p = layoutState(SAMPLES.state)[0].scene;
+  const ells = p.items.filter(i => i.k === 'ellipse');
+  const rects = p.items.filter(i => i.k === 'rect');
+  const kinds = SAMPLES.state.nodes.reduce((m, n) => { m[n.kind || 'state'] = (m[n.kind || 'state'] || 0) + 1; return m; }, {});
+  chk(`${kinds.state} 个状态框`, rects.length === kinds.state, rects.length);
+  chk('起始圆 + 终止双圆 = 3 个椭圆', ells.length === (kinds.initial || 0) + 2 * (kinds.final || 0), ells.length);
+
+  const paths = p.items.filter(i => i.k === 'path');
+  chk(`${SAMPLES.state.transitions.length} 条迁移`, paths.length === SAMPLES.state.transitions.length, paths.length);
+  const skew = paths.filter(pt => pt.pts.some((q, i) => i > 0 && q[0] !== pt.pts[i - 1][0] && q[1] !== pt.pts[i - 1][1]));
+  chk('迁移全部正交（无斜段）', skew.length === 0, skew.length);
+
+  // 自回路单独造数据验（默认样例里不一定有自己连自己的迁移）
+  const loopScene = layoutState({
+    title: 't',
+    nodes: [
+      { id: 'a', text: '待付款', kind: 'state', col: 1, row: 1 },
+      { id: 'b', text: '已付款', kind: 'state', col: 2, row: 1 }
+    ],
+    transitions: [
+      { from: 'a', to: 'a', label: '超时催付' },
+      { from: 'a', to: 'b', label: '支付成功' }
+    ]
+  })[0].scene;
+  const loopPaths = loopScene.items.filter(i => i.k === 'path');
+  const loopPath = loopPaths.find(x => x.pts.length === 4 && x.pts[0][0] === x.pts[3][0]);
+  chk('自调用画成 4 点方回路', !!loopPath);
+  chk('自回路不写折点进 drawio', !!loopPath && loopPath.loop === true);
+  const loopLabel = loopScene.items.find(i => i.k === 'text');
+  chk('自回路标签挂在状态框下', !!loopLabel && loopLabel.parent === 'a', loopLabel && loopLabel.parent);
+  chk('标签在回路下方', !!loopLabel && !!loopPath && loopLabel.y > loopPath.pts[1][1], loopLabel && loopLabel.y);
+  const boxA = loopScene.items.find(i => i.k === 'rect' && i.id === 'a');
+  chk('自回路挂在状态框下半侧', !!loopPath && !!boxA && loopPath.pts[0][1] > boxA.y + boxA.h / 2);
 }
 
 console.log(`\n===== ${pass} 通过 / ${fail} 失败 =====`);

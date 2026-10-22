@@ -9,6 +9,7 @@ import SequenceForm from './forms/SequenceForm.vue';
 import FlowForm from './forms/FlowForm.vue';
 import SwimForm from './forms/SwimForm.vue';
 import ClassForm from './forms/ClassForm.vue';
+import StateForm from './forms/StateForm.vue';
 import JsonPanel from './JsonPanel.vue';
 import PromptDialog from './PromptDialog.vue';
 import { HINTS } from '../core/samples';
@@ -26,7 +27,8 @@ const FORMS: Record<DiagramType, any> = {
   sequence: SequenceForm,
   flow: FlowForm,
   swim: SwimForm,
-  class: ClassForm
+  class: ClassForm,
+  state: StateForm
 };
 const formComp = computed(() => FORMS[state.type]);
 

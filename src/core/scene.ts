@@ -85,6 +85,12 @@ export interface ScenePath {
   ports?: EdgePorts;
   /** drawio 走正交路由：拖动端点后自动保持直角（ER/用例的直线仍用默认） */
   route?: 'ortho';
+  /**
+   * 自调用回路（source === target）：**不要**把折点写进 drawio。
+   * draw.io 对「首尾同一个图形」的边有自己的回路走法，塞了折点反而被它重排成一根长线。
+   * SVG 侧照常按 pts 画。
+   */
+  loop?: boolean;
 }
 /** 独立文字（无白底） */
 export interface SceneText {
@@ -92,6 +98,8 @@ export interface SceneText {
   x: number; y: number; text: string; fs: number;
   anchor?: 'start' | 'middle' | 'end';
   weight?: string; rotate?: number;
+  /** 挂在某个图形下面（drawio 里成为它的子单元格）：拖动图形时文字跟着走 */
+  parent?: string;
 }
 /**
  * 带白底的标注（基数 1/n、消息文字）。

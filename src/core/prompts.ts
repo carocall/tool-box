@@ -620,6 +620,87 @@ const CLASS = `${COMMON_HEAD}
 现在请根据下面的需求生成 JSON：
 【在这里粘贴你的需求，例如：电商系统的订单模块，包含用户、订单、订单项、商品、支付接口以及支付宝支付实现】`;
 
+/** 状态图：圆角状态 + 起始/终止圆点 + 带事件的箭头 */
+const STATE = `${COMMON_HEAD}
+
+【本图：状态图（UML 状态机）】
+这张图**不做自动布局**：每个状态填「第几列、第几行」，格子会自动撑开。
+你只需要说清：有哪几个状态、从哪到哪、触发事件是什么。
+
+【JSON 结构】
+{
+  "title": "订单状态图",
+  "nodes": [
+    { "id": "s0", "text": "",       "kind": "initial", "col": 1, "row": 1 },
+    { "id": "s1", "text": "待付款",  "kind": "state",   "col": 2, "row": 1 },
+    { "id": "s9", "text": "",       "kind": "final",   "col": 6, "row": 1 }
+  ],
+  "transitions": [
+    { "from": "s0", "to": "s1", "label": "下单" },
+    { "from": "s1", "to": "s1", "label": "超时催付" }
+  ]
+}
+
+【字段说明】
+- kind 三种：
+  - "initial"：**起始圆点**（实心小圆），一个状态图只能有一个，text 留空
+  - "state"  ：圆角矩形的状态，text 写状态名
+  - "final"  ：**终止圆点**（双圆），可以有多个，text 留空
+- col / row：**从 1 开始的整数网格坐标**，指状态中心落在第几格
+- transitions[].label：**触发事件**，如「支付成功」「发货」「取消订单」
+- transitions[].dash：true 表示虚线（可选，一般不填）
+
+【布局规则】
+1. **主干横着排**：col = 1、2、3……，row 都用 1。起始圆在最左，终止圆在最右。
+2. 异常分支（取消 / 退款 / 超时）放到 **row 3**，与对应的状态同一 col。
+3. 一个状态自己连自己（from 和 to 相同）会画成**右侧的小回路**，用来表示「重试」「催付」这类重复动作。
+4. 不要出现没人指向、也没指出去的状态（除了起始和终止）。
+5. 不同状态至少差 1 列或 1 行。
+
+【画状态图的常识】
+- 状态名用**形容词 / 完成态**：待付款、已发货、已关闭（不要写「付款」「发货」这种动作，动作属于事件）
+- 事件写**动宾或结果**：支付成功、超时未支付、用户取消
+- 同一对状态之间不要画两条同向的线；两个方向都有就画两条（一条标过去、一条标回来）
+- 有并列子状态时才需要拆分，这里只画一级状态
+
+【示例：订单状态】
+{
+  "title": "订单状态图",
+  "nodes": [
+    { "id": "s0", "text": "", "kind": "initial", "col": 1, "row": 1 },
+    { "id": "s1", "text": "待付款", "kind": "state", "col": 2, "row": 1 },
+    { "id": "s2", "text": "已付款", "kind": "state", "col": 3, "row": 1 },
+    { "id": "s3", "text": "已发货", "kind": "state", "col": 4, "row": 1 },
+    { "id": "s4", "text": "已完成", "kind": "state", "col": 5, "row": 1 },
+    { "id": "s9", "text": "", "kind": "final", "col": 6, "row": 1 },
+    { "id": "s5", "text": "已关闭", "kind": "state", "col": 2, "row": 3 },
+    { "id": "s6", "text": "退款中", "kind": "state", "col": 4, "row": 3 },
+    { "id": "s7", "text": "已退款", "kind": "state", "col": 5, "row": 3 }
+  ],
+  "transitions": [
+    { "from": "s0", "to": "s1", "label": "下单" },
+    { "from": "s1", "to": "s2", "label": "支付成功" },
+    { "from": "s1", "to": "s1", "label": "超时催付" },
+    { "from": "s1", "to": "s5", "label": "取消订单" },
+    { "from": "s2", "to": "s3", "label": "发货" },
+    { "from": "s3", "to": "s4", "label": "确认收货" },
+    { "from": "s4", "to": "s9" },
+    { "from": "s3", "to": "s6", "label": "申请退款" },
+    { "from": "s6", "to": "s7", "label": "退款完成" },
+    { "from": "s7", "to": "s9" }
+  ]
+}
+
+【输出前自检】
+- 有且只有一个 "initial"，且它的 text 为空。
+- 每个节点都有 id / kind / col / row；state 的 text 不为空。
+- 每条 transition 的 from / to 都能在 nodes 里找到。
+- 每条线都写了事件（除了指向终止圆的那条可以不写）。
+- JSON 完整、格式正确。
+
+现在请根据下面的需求生成 JSON：
+【在这里粘贴你的需求，例如：订单从待付款开始，支付后变为已付款，发货后变为已发货，确认收货后完成；超时可取消，发货后可以申请退款】`;
+
 export const PROMPTS: Record<DiagramType, string> = {
   er: ER,
   usecase: USECASE,
@@ -628,5 +709,6 @@ export const PROMPTS: Record<DiagramType, string> = {
   sequence: SEQUENCE,
   flow: FLOW,
   swim: SWIM,
-  class: CLASS
+  class: CLASS,
+  state: STATE
 };

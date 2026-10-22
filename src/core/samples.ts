@@ -167,6 +167,27 @@ export const SAMPLES: Record<DiagramType, DiagramData> = {
       { from: 'Order', to: 'Payment', kind: 'association', label: '支付方式' },
       { from: 'Alipay', to: 'Payment', kind: 'implements' }
     ]
+  },
+  // 状态图：圆角状态 + 起始/终止圆点，位置同样是 col / row 网格
+  state: {
+    title: '优惠券状态图',
+    nodes: [
+      { id: 's0', text: '', kind: 'initial', col: 1, row: 1 },
+      { id: 's1', text: '待领取', kind: 'state', col: 2, row: 1 },
+      { id: 's2', text: '已领取', kind: 'state', col: 3, row: 1 },
+      { id: 's3', text: '已使用', kind: 'state', col: 4, row: 1 },
+      { id: 's9', text: '', kind: 'final', col: 5, row: 1 },
+      { id: 's4', text: '已过期', kind: 'state', col: 3, row: 3 }
+    ],
+    transitions: [
+      { from: 's0', to: 's1', label: '创建优惠券' },
+      { from: 's1', to: 's2', label: '用户领取' },
+      { from: 's2', to: 's3', label: '下单抵扣' },
+      { from: 's3', to: 's9' },
+      { from: 's1', to: 's4', label: '有效期届满' },
+      { from: 's2', to: 's4', label: '有效期届满' },
+      { from: 's4', to: 's9' }
+    ]
   }
 };
 
@@ -178,5 +199,6 @@ export const HINTS: Record<DiagramType, string> = {
   sequence: '<b>时序图</b>　角色固定在最左列，生命线依次向右排。逐条添加消息，选择「从 / 到」和类型（请求 / 返回 / 自调用）即可，激活条会自动计算。',
   flow: '<b>流程图</b>　这张图的<b>位置全靠你（或 AI）给</b>：每个节点填「列 / 行」两个数字，同一行自动对齐、同一列自动对齐，框的大小按文字自动算。形状可选 开始 / 结束 / 处理 / 判断 / 输入输出。觉得不理想就导出 drawio 自己拖。',
   swim: '<b>泳道图</b>　横轴是「谁负责」，纵轴是「流程走到哪一步」。先在上面的「泳道 / 阶段」里填名称，再给每个节点填<b>第几列第几行</b>。一个格子可以放多个节点（从上往下叠），跨泳道的连线会自动走成正交折线。',
-  class: '<b>类图</b>　三段式类框：类名 / 属性 / 方法，<b>一行一条</b>（例如「+ id: Long」）。位置填「列 / 行」（网格，从 1 开始），框的大小按内容自动算。关系分 6 种：继承、实现、组合、聚合、关联、依赖，箭头样式按 UML 约定自动画 —— 组合的菱形画在「from」那一端，继承的空心三角指向「to」。'
+  class: '<b>类图</b>　三段式类框：类名 / 属性 / 方法，<b>一行一条</b>（例如「+ id: Long」）。位置填「列 / 行」（网格，从 1 开始），框的大小按内容自动算。关系分 6 种：继承、实现、组合、聚合、关联、依赖，箭头样式按 UML 约定自动画 —— 组合的菱形画在「from」那一端，继承的空心三角指向「to」。',
+  state: '<b>状态图</b>　圆角框是状态，实心小圆是<b>起始</b>，双圆是<b>终止</b>，箭头上的文字是<b>事件</b>（「支付成功」「发货」）。位置填「列 / 行」，格子会自动撑开。一个状态自己连自己会画成右侧小回路，用来表示「重试 / 催付」这类重复动作。'
 };

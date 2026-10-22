@@ -7,7 +7,7 @@
  * - 渲染器是纯函数，不允许修改传入的数据。
  */
 
-export type DiagramType = 'er' | 'usecase' | 'functional' | 'arch' | 'sequence' | 'flow' | 'swim' | 'class';
+export type DiagramType = 'er' | 'usecase' | 'functional' | 'arch' | 'sequence' | 'flow' | 'swim' | 'class' | 'state';
 
 /** 一张渲染好的图 */
 export interface Diagram {
@@ -173,7 +173,7 @@ export interface ArchitectureData {
 }
 
 export type DiagramData =
-  | ERData | UsecaseData | FunctionalData | SequenceData | ArchitectureData | FlowData | SwimData | ClassData;
+  | ERData | UsecaseData | FunctionalData | SequenceData | ArchitectureData | FlowData | SwimData | ClassData | StateData;
 
 /* ------------------------------------------------------------------ *
  * 7. 泳道图（跨职能流程图）
@@ -241,6 +241,31 @@ export interface ClassData {
   title: string;
   classes: ClassNode[];
   relations: ClassRelation[];
+}
+
+/* ------------------------------------------------------------------ *
+ * 9. 状态图（UML State Machine）
+ * ------------------------------------------------------------------ */
+
+export type StateKind = 'initial' | 'state' | 'final';
+
+/**
+ * 一个状态。`col` / `row` 是网格坐标（从 1 开始），与流程图一致：不做自动布局。
+ * initial / final 不需要文字（画成实心圆 / 双圆）。
+ */
+export interface StateNode {
+  id: string;
+  text: string;
+  kind?: StateKind;
+  col: number;
+  row: number;
+}
+
+/** 迁移 = 事件 / 条件，画成带文字的箭头 */
+export interface StateData {
+  title: string;
+  nodes: StateNode[];
+  transitions: FlowEdge[];
 }
 
 /* ------------------------------------------------------------------ *

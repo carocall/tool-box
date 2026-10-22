@@ -23,7 +23,8 @@ export const TYPE_LABEL: Record<DiagramType, string> = {
   sequence: '时序图',
   flow: '流程图',
   swim: '泳道图',
-  class: '类图'
+  class: '类图',
+  state: '状态图'
 };
 
 /** 各类型的大分区 key（用于“全部折叠”） */
@@ -35,7 +36,8 @@ export const SECTION_KEYS: Record<DiagramType, string[]> = {
   sequence: ['sequence:生命线', 'sequence:消息'],
   flow: ['flow:节点', 'flow:连线'],
   swim: ['swim:泳道', 'swim:阶段', 'swim:节点', 'swim:连线'],
-  class: ['class:类', 'class:关系']
+  class: ['class:类', 'class:关系'],
+  state: ['state:状态', 'state:迁移']
 };
 
 export const state = reactive({
@@ -49,7 +51,8 @@ export const state = reactive({
     sequence: clone(SAMPLES.sequence),
     flow: clone(SAMPLES.flow),
     swim: clone(SAMPLES.swim),
-    class: clone(SAMPLES.class)
+    class: clone(SAMPLES.class),
+    state: clone(SAMPLES.state)
   } as Record<DiagramType, any>
 });
 
@@ -67,6 +70,7 @@ export function isEmptyData(t: DiagramType, d: any): boolean {
   if (t === 'arch') return !(d.layers || []).length;
   if (t === 'flow' || t === 'swim') return !(d.nodes || []).length;
   if (t === 'class') return !(d.classes || []).length;
+  if (t === 'state') return !(d.nodes || []).length;
   return !(d.lifelines || []).length;
 }
 
@@ -134,6 +138,7 @@ export function toggleFoldAll() {
   else if (state.type === 'sequence') mark(d.messages);
   else if (state.type === 'flow' || state.type === 'swim') { mark(d.nodes); mark(d.edges); }
   else if (state.type === 'class') { mark(d.classes); mark(d.relations); }
+  else if (state.type === 'state') { mark(d.nodes); mark(d.transitions); }
 }
 
 /** 切到某类型时恢复“全部折叠”的初始观感 */
@@ -153,6 +158,7 @@ export function emptyData(t: DiagramType): any {
   if (t === 'flow') return { title: '流程图', nodes: [], edges: [] };
   if (t === 'swim') return { title: '泳道图', lanes: ['角色A', '角色B'], stages: ['阶段一', '阶段二'], nodes: [], edges: [] };
   if (t === 'class') return { title: '类图', classes: [], relations: [] };
+  if (t === 'state') return { title: '状态图', nodes: [], transitions: [] };
   return { title: '时序图', actor: '用户', lifelines: [], messages: [] };
 }
 
@@ -358,6 +364,34 @@ export function normalizeData(t: DiagramType, raw: any): any {
           ...(r.label ? { label: String(r.label) } : {})
         };
       });
+    return out;
+  }
+
+  if (t === 'state') {
+    if (!Array.isArray(raw.nodes)) throw new Error('缺少 nodes 数组');
+    out.title = String(raw.title ?? '状态图');
+    const used = new Set<string>();
+    out.nodes = raw.nodes.filter((n: any) => n && typeof n === 'object').map((n: any, i: number) => {
+      let id = String(n.id ?? `s${i + 1}`);
+      while (used.has(id)) id += '_';
+      used.add(id);
+      const kind = String(n.kind ?? n.shape ?? 'state').toLowerCase();
+      return {
+        id,
+        text: String(n.text ?? n.name ?? ''),
+        kind: ['initial', 'final', 'state'].includes(kind) ? kind : 'state',
+        col: Math.max(1, Math.round(Number(n.col) || 1)),
+        row: Math.max(1, Math.round(Number(n.row) || i + 2))
+      };
+    });
+    out.transitions = (Array.isArray(raw.transitions) ? raw.transitions : [])
+      .filter((x: any) => x && typeof x === 'object' && x.from != null && x.to != null)
+      .map((x: any) => ({
+        from: String(x.from),
+        to: String(x.to),
+        ...(x.label ? { label: String(x.label) } : {}),
+        ...(x.dash ? { dash: true } : {})
+      }));
     return out;
   }
 

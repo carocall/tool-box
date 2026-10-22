@@ -338,7 +338,8 @@ function sceneCells(sc: Scene): Cell[] {
       if (src) c.source = src;
       if (dst) c.target = dst;
       // 两端都连了图形时，首尾点由端口/图形边界决定，只保留中间折点
-      if (src && dst && pts.length > 2) c.waypoints = pts.slice(1, -1);
+      //（自调用回路除外：draw.io 会自己画回路，给折点反而被重排成一根长线）
+      if (src && dst && pts.length > 2 && !(it as any).loop) c.waypoints = pts.slice(1, -1);
       if (!src) c.sourcePoint = pts[0];
       if (!dst) c.targetPoint = pts[pts.length - 1];
       out.push(c);
@@ -354,10 +355,13 @@ function sceneCells(sc: Scene): Cell[] {
       const w = tw(it.text, it.fs) + 8, h = it.fs + 8;
       const align = it.anchor === 'start' ? 'left' : it.anchor === 'end' ? 'right' : 'center';
       const x = it.anchor === 'start' ? it.x : it.anchor === 'end' ? it.x - w : it.x - w / 2;
+      // 挂在图形下面的文字（状态图的自回路标签）：坐标要相对父级，拖动时跟着走
+      const pid = it.parent ? idOf.get(it.parent) : undefined;
+      const pb = pid ? abs.get(pid) : undefined;
       out.push({
-        id: nextId('t'), vertex: true, value: htmlValue(it.text),
+        id: nextId('t'), vertex: true, value: htmlValue(it.text), parent: pid,
         style: textStyle({ fs: it.fs, align, weight: it.weight, bg: false }),
-        x, y: it.y - h / 2, w, h
+        x: pb ? x - pb.x : x, y: pb ? it.y - h / 2 - pb.y : it.y - h / 2, w, h
       });
     }
   }
