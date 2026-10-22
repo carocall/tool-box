@@ -20,7 +20,7 @@ execSync('npx esbuild src/core/index.ts --bundle --format=esm --outfile=tmp/core
   cwd: ROOT, stdio: 'inherit', shell: true
 });
 
-const { SAMPLES, render, layoutFlow, buildDrawio, LAYOUTS } = await import(
+const { SAMPLES, render, layoutFlow, layoutSwim, buildDrawio, LAYOUTS } = await import(
   pathToFileURL(path.join(ROOT, 'tmp/core.mjs')).href
 );
 
@@ -117,6 +117,22 @@ console.log('\n[5] drawio 导出');
   chk(`${edges.length} 条边都有 source + target`, floating.length === 0, floating.length);
   chk('source / target 指向存在的单元格', badRef.length === 0, badRef.slice(0, 3));
   chk('value 里没有裸 `<`', !/<mxCell [^>]*value="[^"]*<[^&]/.test(xml));
+}
+
+/* ---------------- 6. 泳道图：格子 + 正交连线 ---------------- */
+console.log('\n[6] 泳道图');
+{
+  const p = layoutSwim(SAMPLES.swim)[0].scene;
+  const cells = p.items.filter(i => i.id && i.id.startsWith('cell_'));
+  const want = SAMPLES.swim.lanes.length * SAMPLES.swim.stages.length;
+  chk(`${SAMPLES.swim.lanes.length}×${SAMPLES.swim.stages.length} = ${want} 个格子`, cells.length === want, cells.length);
+
+  const paths = p.items.filter(i => i.k === 'path');
+  const skew = paths.filter(pt => pt.pts.some((q, i) => i > 0 && q[0] !== pt.pts[i - 1][0] && q[1] !== pt.pts[i - 1][1]));
+  chk(`${paths.length} 条连线全部正交（无斜段）`, skew.length === 0, skew.length);
+
+  const owned = p.items.filter(i => i.parent && i.parent.startsWith('cell_'));
+  chk(`${owned.length} 个节点都挂在格子里（drawio 里拖动不串道）`, owned.length === SAMPLES.swim.nodes.length, owned.length);
 }
 
 console.log(`\n===== ${pass} 通过 / ${fail} 失败 =====`);

@@ -36,7 +36,8 @@ const ALL = [
   { key: 'functional', tab: '功能模块图' },
   { key: 'arch', tab: '系统架构图' },
   { key: 'sequence', tab: '时序图' },
-  { key: 'flow', tab: '流程图' }
+  { key: 'flow', tab: '流程图' },
+  { key: 'swim', tab: '泳道图' }
 ];
 
 const page = await ctx.newPage();
@@ -190,7 +191,7 @@ for (const t of ALL.slice(1)) {
   await page.click('text=复制提示词');
   await page.waitForTimeout(250);
   const txt = await page.textContent('.prompt-pre');
-  const key = { usecase: '"usecases"', functional: '"roles"', arch: '"layers"', sequence: '"messages"', flow: '"nodes"' }[t.key];
+  const key = { usecase: '"usecases"', functional: '"roles"', arch: '"layers"', sequence: '"messages"', flow: '"nodes"', swim: '"lanes"' }[t.key];
   chk(`${t.key} 提示词含 ${key}`, txt.includes(key));
   await page.click('.prompt-modal .btn:not(.primary)');
   await page.waitForTimeout(200);
@@ -315,6 +316,13 @@ for (const t of ALL.slice(1)) {
     chk('流程图：输入输出用平行四边形', x2.includes('shape=parallelogram;'));
     chk('流程图：连线全连到图形（无浮空）', a.floating === 0, a);
     chk('流程图：是/否标签挂在边上', a.labelsOnEdge >= 2, a.labelsOnEdge);
+  }
+  if (t.key === 'swim') {
+    chk('泳道图：7 条连线', a.edges === 7, a.edges);
+    chk('泳道图：连线全连到图形（无浮空）', a.floating === 0, a);
+    chk('泳道图：节点是格子的子单元格', a.children >= 7, a.children);
+    chk('泳道图：判断框用 rhombus', x2.includes('rhombus;'));
+    chk('泳道图：顶点含表头/格子/节点', (x2.match(/vertex="1"/g) || []).length >= 22, (x2.match(/vertex="1"/g) || []).length);
   }
   if (t.key === 'functional') {
     chk('功能模块名用 &lt;br&gt; 逐字换行', /value="[^"]*&lt;br&gt;[^"]*"/.test(x2));

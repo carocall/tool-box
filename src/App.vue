@@ -11,7 +11,8 @@ const TABS: { type: DiagramType; label: string }[] = [
   { type: 'functional', label: '功能模块图' },
   { type: 'arch', label: '系统架构图' },
   { type: 'sequence', label: '时序图' },
-  { type: 'flow', label: '流程图' }
+  { type: 'flow', label: '流程图' },
+  { type: 'swim', label: '泳道图' }
 ];
 
 /**

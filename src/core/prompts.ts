@@ -465,11 +465,93 @@ const FLOW = `${COMMON_HEAD}
 现在请根据下面的需求生成 JSON：
 【在这里粘贴你的需求，例如：学生提交请假申请，3 天内由辅导员审批，超过 3 天还要院长审批】`;
 
+/** 泳道图：列 = 角色，行 = 阶段，位置同样由数据给 */
+const SWIM = `${COMMON_HEAD}
+
+【本图：泳道图（跨职能流程图）】
+横轴 = **谁负责**（lanes），纵轴 = **流程走到哪一步**（stages）。
+你只要把每个节点分配到「第几列、第几行」，位置、框大小、连线拐点全部由引擎算。
+
+【JSON 结构】
+{
+  "title": "员工报销审批流程",
+  "lanes": ["员工", "主管", "财务"],
+  "stages": ["提交申请", "审核审批", "付款归档"],
+  "nodes": [
+    { "id": "n1", "kind": "process", "text": "填写报销单", "lane": 1, "stage": 1 },
+    { "id": "n2", "kind": "io",      "text": "上传发票",   "lane": 1, "stage": 1 },
+    { "id": "n3", "kind": "decision","text": "超 5000？",  "lane": 2, "stage": 2 }
+  ],
+  "edges": [
+    { "from": "n1", "to": "n2" },
+    { "from": "n3", "to": "n4", "label": "是" }
+  ]
+}
+
+【字段说明】
+- lanes：列头，写**角色 / 部门 / 参与方**，顺序即从左到右
+- stages：行头，写**阶段 / 环节**，顺序即从上到下
+- lane / stage：**从 1 开始的整数**，不是像素
+- kind：process（处理，矩形）/ decision（判断，菱形）/ io（输入输出，平行四边形）/ start / end
+- 一个格子里可以放**多个节点**，按数组顺序自上而下排列
+- edges[].label：判断出来的线写「是」「否」
+
+【布局规则（务必遵守）】
+1. 每个节点落在唯一的 (lane, stage) 交叉格里，**一个格子最多放 2 个节点**。
+2. 流程主体**从上往下**走：后面的节点 stage 更大。
+3. 同一阶段里换部门 → 横向连；换阶段 → 竖直连。引擎会自动折成正交线。
+4. 判断框两条出线必须分别标「是」「否」，并落到不同格子。
+5. 每列、每行都至少要有一个节点，别留空泳道或空阶段。
+6. 列和行都别铺得太开 —— 一张图看不过来的就拆成两张。
+
+【画泳道图的常识】
+- lanes 写**角色**（员工 / 主管 / 财务），不要写动作（填写 / 审批）——动作是节点。
+- stages 写**阶段**（提交 / 审批 / 付款），一个阶段占一行。
+- 同一个动作只出现一次；"交接到下一个部门"用箭头表示，不要重复画。
+- 判断框文字 ≤ 8 字，用问号结尾。
+
+【示例：三列三行的报销审批】
+{
+  "title": "员工报销审批流程",
+  "lanes": ["员工", "主管", "财务"],
+  "stages": ["提交申请", "审核审批", "付款归档"],
+  "nodes": [
+    { "id": "n1", "kind": "process",  "text": "填写报销单", "lane": 1, "stage": 1 },
+    { "id": "n2", "kind": "io",       "text": "上传发票",   "lane": 1, "stage": 1 },
+    { "id": "n3", "kind": "process",  "text": "主管审批",   "lane": 2, "stage": 2 },
+    { "id": "n4", "kind": "decision", "text": "超 5000？",  "lane": 2, "stage": 2 },
+    { "id": "n5", "kind": "process",  "text": "财务复核",   "lane": 3, "stage": 2 },
+    { "id": "n6", "kind": "process",  "text": "打款",       "lane": 3, "stage": 3 },
+    { "id": "n7", "kind": "end",      "text": "收到通知",   "lane": 1, "stage": 3 }
+  ],
+  "edges": [
+    { "from": "n1", "to": "n2" },
+    { "from": "n2", "to": "n3" },
+    { "from": "n3", "to": "n4" },
+    { "from": "n4", "to": "n5", "label": "是" },
+    { "from": "n4", "to": "n6", "label": "否" },
+    { "from": "n5", "to": "n6" },
+    { "from": "n6", "to": "n7" }
+  ]
+}
+
+【输出前自检】
+- lanes / stages 都不为空，每个都有名字。
+- 每个节点都有 id / kind / text / lane / stage 五个字段。
+- lane ≤ lanes 的个数、stage ≤ stages 的个数（都从 1 开始）。
+- 每条 edge 的 from / to 都能在 nodes 里找到，id 不重复。
+- 判断框有两条出线，分别标了「是」「否」。
+- JSON 完整、格式正确。
+
+现在请根据下面的需求生成 JSON：
+【在这里粘贴你的需求，例如：员工提交报销申请，主管审批，超过 5000 元需要财务复核，财务打款后通知员工】`;
+
 export const PROMPTS: Record<DiagramType, string> = {
   er: ER,
   usecase: USECASE,
   functional: FUNCTIONAL,
   arch: ARCH,
   sequence: SEQUENCE,
-  flow: FLOW
+  flow: FLOW,
+  swim: SWIM
 };

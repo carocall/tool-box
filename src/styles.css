@@ -259,3 +259,6 @@
   /* 预览栏的「去 drawio 编辑」：比导出按钮更轻，暗示是跳转而不是下载 */
   button.btn.go-drawio{color:var(--accent);border-color:#c9d6f8;background:#f6f8ff;}
   button.btn.go-drawio:hover{background:#eef3ff;border-color:#a9bcf0;color:var(--accent);}
+
+  /* 泳道图表单：下拉框窄一点，两个并排 */
+  .grid-xy select.sm{width:auto;min-width:92px;padding:5px 8px;}

@@ -21,7 +21,8 @@ export const TYPE_LABEL: Record<DiagramType, string> = {
   functional: '功能模块图',
   arch: '系统架构图',
   sequence: '时序图',
-  flow: '流程图'
+  flow: '流程图',
+  swim: '泳道图'
 };
 
 /** 各类型的大分区 key（用于“全部折叠”） */
@@ -31,7 +32,8 @@ export const SECTION_KEYS: Record<DiagramType, string[]> = {
   functional: ['functional:角色'],
   arch: ['arch:层次'],
   sequence: ['sequence:生命线', 'sequence:消息'],
-  flow: ['flow:节点', 'flow:连线']
+  flow: ['flow:节点', 'flow:连线'],
+  swim: ['swim:泳道', 'swim:阶段', 'swim:节点', 'swim:连线']
 };
 
 export const state = reactive({
@@ -43,7 +45,8 @@ export const state = reactive({
     functional: clone(SAMPLES.functional),
     arch: clone(SAMPLES.arch),
     sequence: clone(SAMPLES.sequence),
-    flow: clone(SAMPLES.flow)
+    flow: clone(SAMPLES.flow),
+    swim: clone(SAMPLES.swim)
   } as Record<DiagramType, any>
 });
 
@@ -59,7 +62,7 @@ export function isEmptyData(t: DiagramType, d: any): boolean {
   if (t === 'usecase') return !(d.usecases || []).length;
   if (t === 'functional') return !(d.roles || []).length;
   if (t === 'arch') return !(d.layers || []).length;
-  if (t === 'flow') return !(d.nodes || []).length;
+  if (t === 'flow' || t === 'swim') return !(d.nodes || []).length;
   return !(d.lifelines || []).length;
 }
 
@@ -125,7 +128,7 @@ export function toggleFoldAll() {
   else if (state.type === 'arch') mark(d.layers);
   else if (state.type === 'usecase') mark(d.usecases);
   else if (state.type === 'sequence') mark(d.messages);
-  else if (state.type === 'flow') { mark(d.nodes); mark(d.edges); }
+  else if (state.type === 'flow' || state.type === 'swim') { mark(d.nodes); mark(d.edges); }
 }
 
 /** 切到某类型时恢复“全部折叠”的初始观感 */
@@ -143,6 +146,7 @@ export function emptyData(t: DiagramType): any {
   if (t === 'functional') return { title: '系统', roles: [], layout: 'bottom' };
   if (t === 'arch') return { title: '系统总体架构', layers: [] };
   if (t === 'flow') return { title: '流程图', nodes: [], edges: [] };
+  if (t === 'swim') return { title: '泳道图', lanes: ['角色A', '角色B'], stages: ['阶段一', '阶段二'], nodes: [], edges: [] };
   return { title: '时序图', actor: '用户', lifelines: [], messages: [] };
 }
 
@@ -264,6 +268,44 @@ export function normalizeData(t: DiagramType, raw: any): any {
         col: Number.isFinite(Number(n.col)) ? Number(n.col) : 5,
         row: Number.isFinite(Number(n.row)) ? Number(n.row) : 1 + i * 2,
         ...(Number(n.w) > 0 ? { w: Number(n.w) } : {})
+      };
+    });
+    out.edges = (Array.isArray(raw.edges) ? raw.edges : [])
+      .filter((e: any) => e && typeof e === 'object' && e.from != null && e.to != null)
+      .map((e: any) => ({
+        from: String(e.from),
+        to: String(e.to),
+        ...(e.label ? { label: String(e.label) } : {}),
+        ...(e.dash ? { dash: true } : {})
+      }));
+    return out;
+  }
+
+  if (t === 'swim') {
+    if (!Array.isArray(raw.nodes)) throw new Error('缺少 nodes 数组');
+    out.title = String(raw.title ?? '泳道图');
+    const names = (arr: any, fallback: string[]) => {
+      const list = (Array.isArray(arr) ? arr : [])
+        .map((x: any) => (typeof x === 'string' ? x : String(x?.name ?? x?.text ?? '')))
+        .filter(Boolean);
+      return list.length ? list : fallback;
+    };
+    out.lanes = names(raw.lanes, ['角色A', '角色B']);
+    out.stages = names(raw.stages, ['阶段一', '阶段二']);
+    const used = new Set<string>();
+    out.nodes = raw.nodes.filter((n: any) => n && typeof n === 'object').map((n: any, i: number) => {
+      let id = String(n.id ?? `n${i + 1}`);
+      while (used.has(id)) id += '_';
+      used.add(id);
+      const kind = String(n.kind ?? n.shape ?? 'process').toLowerCase();
+      const lane = Math.round(Number(n.lane) || 1);
+      const stage = Math.round(Number(n.stage) || 1);
+      return {
+        id,
+        text: String(n.text ?? n.name ?? ''),
+        kind: ['start', 'end', 'process', 'decision', 'io'].includes(kind) ? kind : 'process',
+        lane: Math.min(Math.max(lane, 1), out.lanes.length),
+        stage: Math.min(Math.max(stage, 1), out.stages.length)
       };
     });
     out.edges = (Array.isArray(raw.edges) ? raw.edges : [])

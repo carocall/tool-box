@@ -7,7 +7,7 @@
  * - 渲染器是纯函数，不允许修改传入的数据。
  */
 
-export type DiagramType = 'er' | 'usecase' | 'functional' | 'arch' | 'sequence' | 'flow';
+export type DiagramType = 'er' | 'usecase' | 'functional' | 'arch' | 'sequence' | 'flow' | 'swim';
 
 /** 一张渲染好的图 */
 export interface Diagram {
@@ -173,7 +173,35 @@ export interface ArchitectureData {
 }
 
 export type DiagramData =
-  | ERData | UsecaseData | FunctionalData | SequenceData | ArchitectureData | FlowData;
+  | ERData | UsecaseData | FunctionalData | SequenceData | ArchitectureData | FlowData | SwimData;
+
+/* ------------------------------------------------------------------ *
+ * 7. 泳道图（跨职能流程图）
+ * ------------------------------------------------------------------ */
+
+/**
+ * 一个泳道节点。
+ * - `lane`  —— 第几列（从 1 开始）= 谁负责
+ * - `stage` —— 第几行（从 1 开始）= 流程走到哪一步
+ * 一个格子里可以放多个节点，按数组顺序从上往下叠。
+ */
+export interface SwimNode {
+  id: string;
+  text: string;
+  kind?: FlowShape;
+  lane: number;
+  stage: number;
+}
+
+export interface SwimData {
+  title: string;
+  /** 列头：角色 / 部门 / 参与方 */
+  lanes: string[];
+  /** 行头：阶段 / 环节 */
+  stages: string[];
+  nodes: SwimNode[];
+  edges: FlowEdge[];
+}
 
 /* ------------------------------------------------------------------ *
  * 6. 流程图（坐标由 AI 直接给，引擎只按网格换算，不做自动布局）
