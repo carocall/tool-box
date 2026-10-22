@@ -65,17 +65,28 @@ export function svgLine(x1: number, y1: number, x2: number, y2: number, o?: Line
     'stroke-dasharray': o.dash || undefined, 'stroke-linecap': 'round'
   })} />`;
 }
-export function svgPath(d: string, o?: LineOpts): string {
+export function svgPath(d: string, o?: LineOpts & { markerStart?: string }): string {
   o = o || {};
   return `<path${attrStr({
     d: d, fill: 'none', stroke: o.stroke || '#000000',
     'stroke-width': o.sw === undefined ? 1 : o.sw,
     'stroke-dasharray': o.dash || undefined,
     'stroke-linejoin': 'round', 'stroke-linecap': 'round',
+    'marker-start': o.markerStart || undefined,
     'marker-end': o.marker || undefined
   })} />`;
 }
 export function r2(n: number): number { return Math.round(n * 100) / 100; }
+
+/** 类框三段式排版的尺寸（paint-svg 与类图渲染器共用，改一处即可） */
+export const CLASS_M = { padX: 10, padTop: 7, padBottom: 7, nameH: 22, lineH: 17, gap: 6 };
+
+/** 类框总高度：类名区 + 两条分隔线 + 属性行 + 方法行 */
+export function classBoxHeight(attrs: number, methods: number, stereo: boolean): number {
+  const M = CLASS_M;
+  return M.padTop + (stereo ? 16 : 0) + M.nameH + M.gap + 1 + M.gap
+    + attrs * M.lineH + M.gap + 1 + M.gap + methods * M.lineH + M.padBottom;
+}
 
 /** 箭头 marker 定义 */
 export function defsMarkers(pid: string): string {
@@ -85,6 +96,18 @@ export function defsMarkers(pid: string): string {
     </marker>
     <marker id="${pid}-arrowOpen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M0,0 L10,5 L0,10" fill="none" stroke="#000000" stroke-width="1.6"/>
+    </marker>
+    <!-- 类图用：空心三角（继承 / 实现），尖端落在终点上 -->
+    <marker id="${pid}-triHollow" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,0.6 L11,6 L0,11.4 z" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
+    </marker>
+    <!-- 组合：实心菱形，贴在起点（整体那端），沿连线方向铺开 -->
+    <marker id="${pid}-diaFilled" viewBox="0 0 12 12" refX="0" refY="6" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,6 L5.5,1 L11,6 L5.5,11 z" fill="#000000" stroke="#000000" stroke-width="1"/>
+    </marker>
+    <!-- 聚合：空心菱形 -->
+    <marker id="${pid}-diaHollow" viewBox="0 0 12 12" refX="0" refY="6" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0,6 L5.5,1 L11,6 L5.5,11 z" fill="#FFFFFF" stroke="#000000" stroke-width="1"/>
     </marker>
   </defs>`;
 }

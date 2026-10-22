@@ -4,7 +4,7 @@
  * 每种场景元素的绘制顺序必须与改造前逐字符一致（回归靠 tools/compare.mjs 逐字符对比），
  * 所以这里刻意复用 core/svg.ts 里原有的图元函数，不做任何"优化"。
  */
-import { svgRect, svgEllipse, svgPoly, svgLine, svgPath, svgText, svgTextML, labelBox, umlActor, polyPath, svgDoc } from './svg';
+import { svgRect, svgEllipse, svgPoly, svgLine, svgPath, svgText, svgTextML, labelBox, umlActor, polyPath, svgDoc, CLASS_M } from './svg';
 import { svgTextVertical, vTextHeight } from './vertical';
 import type { Scene, SceneItem } from './scene';
 
@@ -55,12 +55,42 @@ function paintItem(it: SceneItem, pid: string): string {
     }
     case 'line':
       return svgLine(it.x1, it.y1, it.x2, it.y2, { sw: it.sw, stroke: it.stroke, dash: it.dash });
-    case 'path':
+    case 'path': {
+      const mk = it.arrow === 'solid' ? `${pid}-arrowSolid`
+        : it.arrow === 'open' ? `${pid}-arrowOpen`
+        : it.arrow === 'triHollow' ? `${pid}-triHollow` : null;
+      const ms = it.startArrow === 'diamondFilled' ? `${pid}-diaFilled`
+        : it.startArrow === 'diamondHollow' ? `${pid}-diaHollow` : null;
       return svgPath(polyPath(it.pts), {
         sw: it.sw, stroke: it.stroke, dash: it.dash,
-        marker: it.arrow === 'solid' ? `url(#${pid}-arrowSolid)`
-          : it.arrow === 'open' ? `url(#${pid}-arrowOpen)` : undefined
+        marker: mk ? `url(#${mk})` : undefined,
+        markerStart: ms ? `url(#${ms})` : undefined
       });
+    }
+    case 'classBox': {
+      const fs = it.fs ?? 13;
+      let s = svgRect(it.x, it.y, it.w, it.h, { fill: it.fill, stroke: it.stroke, sw: it.sw });
+      const cx = it.x + it.w / 2;
+      let y = it.y + CLASS_M.padTop;
+      if (it.stereotype) {
+        s += svgText(cx, y + 11, it.stereotype, { fs: 11.5 });
+        y += 16;
+      }
+      s += svgText(cx, y + CLASS_M.nameH / 2, it.name, { fs: fs + 1, weight: 'bold' });
+      y += CLASS_M.nameH + CLASS_M.gap;
+      s += svgLine(it.x, y, it.x + it.w, y);
+      y += 1 + CLASS_M.gap;
+      it.attrs.forEach((t, i) => {
+        s += svgText(it.x + CLASS_M.padX, y + i * CLASS_M.lineH + CLASS_M.lineH / 2, t, { fs, anchor: 'start' });
+      });
+      y += it.attrs.length * CLASS_M.lineH + CLASS_M.gap;
+      s += svgLine(it.x, y, it.x + it.w, y);
+      y += 1 + CLASS_M.gap;
+      it.methods.forEach((t, i) => {
+        s += svgText(it.x + CLASS_M.padX, y + i * CLASS_M.lineH + CLASS_M.lineH / 2, t, { fs, anchor: 'start' });
+      });
+      return s;
+    }
     case 'text':
       return svgText(it.x, it.y, it.text, { fs: it.fs, anchor: it.anchor, weight: it.weight, rotate: it.rotate });
     case 'label':

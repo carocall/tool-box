@@ -125,6 +125,48 @@ export const SAMPLES: Record<DiagramType, DiagramData> = {
       { from: 'n5', to: 'n6' },
       { from: 'n6', to: 'n7' }
     ]
+  },
+  // 类图：每个类填 col / row（网格，从 1 开始），框的大小按内容自动算
+  class: {
+    title: '订单模块类图',
+    classes: [
+      {
+        id: 'User', name: 'User', col: 1, row: 1,
+        attributes: ['+ id: Long', '+ name: String', '+ phone: String'],
+        methods: ['+ login(): boolean', '+ placeOrder(): Order']
+      },
+      {
+        id: 'Order', name: 'Order', col: 1, row: 3,
+        attributes: ['+ id: Long', '+ amount: BigDecimal', '+ status: String'],
+        methods: ['+ pay(): void', '+ cancel(): void']
+      },
+      {
+        id: 'OrderItem', name: 'OrderItem', col: 1, row: 5,
+        attributes: ['+ id: Long', '+ quantity: int', '+ price: BigDecimal'],
+        methods: ['+ subtotal(): BigDecimal']
+      },
+      {
+        id: 'Payment', name: 'Payment', stereotype: '<<interface>>', col: 3, row: 1,
+        methods: ['+ pay(order: Order): boolean', '+ refund(order: Order): boolean']
+      },
+      {
+        id: 'Alipay', name: 'AlipayPayment', col: 3, row: 3,
+        attributes: ['+ appId: String'],
+        methods: ['+ pay(order: Order): boolean']
+      },
+      {
+        id: 'Product', name: 'Product', col: 3, row: 5,
+        attributes: ['+ id: Long', '+ title: String', '+ price: BigDecimal'],
+        methods: ['+ isOnSale(): boolean']
+      }
+    ],
+    relations: [
+      { from: 'User', to: 'Order', kind: 'association', label: '下达' },
+      { from: 'Order', to: 'OrderItem', kind: 'composition', label: '包含' },
+      { from: 'OrderItem', to: 'Product', kind: 'association' },
+      { from: 'Order', to: 'Payment', kind: 'association', label: '支付方式' },
+      { from: 'Alipay', to: 'Payment', kind: 'implements' }
+    ]
   }
 };
 
@@ -135,5 +177,6 @@ export const HINTS: Record<DiagramType, string> = {
   arch: '<b>系统架构图</b>　一条横带就是一层（如 表现层 / 业务层 / 数据层），带内填该层的组件或技术，层与层之间自动画向下箭头。数组顺序即从上到下的顺序。',
   sequence: '<b>时序图</b>　角色固定在最左列，生命线依次向右排。逐条添加消息，选择「从 / 到」和类型（请求 / 返回 / 自调用）即可，激活条会自动计算。',
   flow: '<b>流程图</b>　这张图的<b>位置全靠你（或 AI）给</b>：每个节点填「列 / 行」两个数字，同一行自动对齐、同一列自动对齐，框的大小按文字自动算。形状可选 开始 / 结束 / 处理 / 判断 / 输入输出。觉得不理想就导出 drawio 自己拖。',
-  swim: '<b>泳道图</b>　横轴是「谁负责」，纵轴是「流程走到哪一步」。先在上面的「泳道 / 阶段」里填名称，再给每个节点填<b>第几列第几行</b>。一个格子可以放多个节点（从上往下叠），跨泳道的连线会自动走成正交折线。'
+  swim: '<b>泳道图</b>　横轴是「谁负责」，纵轴是「流程走到哪一步」。先在上面的「泳道 / 阶段」里填名称，再给每个节点填<b>第几列第几行</b>。一个格子可以放多个节点（从上往下叠），跨泳道的连线会自动走成正交折线。',
+  class: '<b>类图</b>　三段式类框：类名 / 属性 / 方法，<b>一行一条</b>（例如「+ id: Long」）。位置填「列 / 行」（网格，从 1 开始），框的大小按内容自动算。关系分 6 种：继承、实现、组合、聚合、关联、依赖，箭头样式按 UML 约定自动画 —— 组合的菱形画在「from」那一端，继承的空心三角指向「to」。'
 };

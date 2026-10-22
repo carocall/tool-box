@@ -12,7 +12,8 @@ const TABS: { type: DiagramType; label: string }[] = [
   { type: 'arch', label: '系统架构图' },
   { type: 'sequence', label: '时序图' },
   { type: 'flow', label: '流程图' },
-  { type: 'swim', label: '泳道图' }
+  { type: 'swim', label: '泳道图' },
+  { type: 'class', label: '类图' }
 ];
 
 /**

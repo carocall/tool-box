@@ -37,7 +37,8 @@ const ALL = [
   { key: 'arch', tab: '系统架构图' },
   { key: 'sequence', tab: '时序图' },
   { key: 'flow', tab: '流程图' },
-  { key: 'swim', tab: '泳道图' }
+  { key: 'swim', tab: '泳道图' },
+  { key: 'class', tab: '类图' }
 ];
 
 const page = await ctx.newPage();
@@ -191,7 +192,7 @@ for (const t of ALL.slice(1)) {
   await page.click('text=复制提示词');
   await page.waitForTimeout(250);
   const txt = await page.textContent('.prompt-pre');
-  const key = { usecase: '"usecases"', functional: '"roles"', arch: '"layers"', sequence: '"messages"', flow: '"nodes"', swim: '"lanes"' }[t.key];
+  const key = { usecase: '"usecases"', functional: '"roles"', arch: '"layers"', sequence: '"messages"', flow: '"nodes"', swim: '"lanes"', class: '"classes"' }[t.key];
   chk(`${t.key} 提示词含 ${key}`, txt.includes(key));
   await page.click('.prompt-modal .btn:not(.primary)');
   await page.waitForTimeout(200);
@@ -323,6 +324,14 @@ for (const t of ALL.slice(1)) {
     chk('泳道图：节点是格子的子单元格', a.children >= 7, a.children);
     chk('泳道图：判断框用 rhombus', x2.includes('rhombus;'));
     chk('泳道图：顶点含表头/格子/节点', (x2.match(/vertex="1"/g) || []).length >= 22, (x2.match(/vertex="1"/g) || []).length);
+  }
+  if (t.key === 'class') {
+    chk('类图：6 个类框（每个一个加粗类名）', (x2.match(/&lt;b&gt;/g) || []).length === 6, (x2.match(/&lt;b&gt;/g) || []).length);
+    chk('类图：5 条关系', a.edges === 5, a.edges);
+    chk('类图：连线全连到图形（无浮空）', a.floating === 0, a);
+    chk('类图：空心三角 endFill=0', x2.includes('endArrow=block;endFill=0'));
+    chk('类图：组合菱形 startFill=1', x2.includes('startArrow=diamondThin;startFill=1'));
+    chk('类图：<<interface>> 没被当标签吞掉', x2.includes('&amp;lt;&amp;lt;interface'));
   }
   if (t.key === 'functional') {
     chk('功能模块名用 &lt;br&gt; 逐字换行', /value="[^"]*&lt;br&gt;[^"]*"/.test(x2));

@@ -7,7 +7,7 @@
  * - 渲染器是纯函数，不允许修改传入的数据。
  */
 
-export type DiagramType = 'er' | 'usecase' | 'functional' | 'arch' | 'sequence' | 'flow' | 'swim';
+export type DiagramType = 'er' | 'usecase' | 'functional' | 'arch' | 'sequence' | 'flow' | 'swim' | 'class';
 
 /** 一张渲染好的图 */
 export interface Diagram {
@@ -173,7 +173,7 @@ export interface ArchitectureData {
 }
 
 export type DiagramData =
-  | ERData | UsecaseData | FunctionalData | SequenceData | ArchitectureData | FlowData | SwimData;
+  | ERData | UsecaseData | FunctionalData | SequenceData | ArchitectureData | FlowData | SwimData | ClassData;
 
 /* ------------------------------------------------------------------ *
  * 7. 泳道图（跨职能流程图）
@@ -201,6 +201,46 @@ export interface SwimData {
   stages: string[];
   nodes: SwimNode[];
   edges: FlowEdge[];
+}
+
+/* ------------------------------------------------------------------ *
+ * 8. 类图（UML Class）
+ * ------------------------------------------------------------------ */
+
+export type ClassRelKind =
+  | 'extends' | 'implements' | 'composition' | 'aggregation' | 'association' | 'dependency';
+
+/**
+ * 一个类。三段式类框由引擎排版：类名居中加粗、属性/方法左对齐、自动分隔线。
+ * `col` / `row` 是网格坐标（从 1 开始），语义与流程图一致：不做自动布局。
+ */
+export interface ClassNode {
+  id: string;
+  name: string;
+  /** 构造型，如 <<interface>>、<<abstract>> */
+  stereotype?: string;
+  /** 属性，一行一条，如 "+ id: Long" */
+  attributes?: string[];
+  /** 方法，一行一条，如 "+ pay(order: Order): boolean" */
+  methods?: string[];
+  col: number;
+  row: number;
+}
+
+export interface ClassRelation {
+  /** from = 子类 / 整体 / 主动方 */
+  from: string;
+  /** to = 父类 / 部分 / 被动方（空心三角和箭头都指向它） */
+  to: string;
+  kind?: ClassRelKind;
+  /** 关联名，画在连线中间 */
+  label?: string;
+}
+
+export interface ClassData {
+  title: string;
+  classes: ClassNode[];
+  relations: ClassRelation[];
 }
 
 /* ------------------------------------------------------------------ *

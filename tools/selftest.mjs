@@ -20,7 +20,7 @@ execSync('npx esbuild src/core/index.ts --bundle --format=esm --outfile=tmp/core
   cwd: ROOT, stdio: 'inherit', shell: true
 });
 
-const { SAMPLES, render, layoutFlow, layoutSwim, buildDrawio, LAYOUTS } = await import(
+const { SAMPLES, render, layoutFlow, layoutSwim, layoutClass, buildDrawio, LAYOUTS } = await import(
   pathToFileURL(path.join(ROOT, 'tmp/core.mjs')).href
 );
 
@@ -133,6 +133,22 @@ console.log('\n[6] 泳道图');
 
   const owned = p.items.filter(i => i.parent && i.parent.startsWith('cell_'));
   chk(`${owned.length} 个节点都挂在格子里（drawio 里拖动不串道）`, owned.length === SAMPLES.swim.nodes.length, owned.length);
+}
+
+/* ---------------- 7. 类图：三段式类框 + 6 种关系箭头 ---------------- */
+console.log('\n[7] 类图');
+{
+  const p = layoutClass(SAMPLES.class)[0].scene;
+  const boxes = p.items.filter(i => i.k === 'classBox');
+  chk(`${SAMPLES.class.classes.length} 个类框`, boxes.length === SAMPLES.class.classes.length, boxes.length);
+  chk('类框有三段内容', boxes.every(b => b.name && (b.attrs.length + b.methods.length) > 0));
+
+  const paths = p.items.filter(i => i.k === 'path');
+  const skew = paths.filter(pt => pt.pts.some((q, i) => i > 0 && q[0] !== pt.pts[i - 1][0] && q[1] !== pt.pts[i - 1][1]));
+  chk(`${paths.length} 条关系线全部正交（无斜段）`, skew.length === 0, skew.length);
+  chk('实现关系用空心三角', paths.filter(x => x.arrow === 'triHollow').length === 1);
+  chk('组合关系用实心菱形（起点端）', paths.filter(x => x.startArrow === 'diamondFilled').length === 1);
+  chk('虚线关系 = 1 条', paths.filter(x => x.dash).length === 1, paths.filter(x => x.dash).length);
 }
 
 console.log(`\n===== ${pass} 通过 / ${fail} 失败 =====`);

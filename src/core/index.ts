@@ -11,6 +11,7 @@ import { renderArchitecture, layoutArchitecture } from './renderers/arch';
 import { renderSequence, layoutSequence } from './renderers/sequence';
 import { renderFlow, layoutFlow } from './renderers/flow';
 import { renderSwim, layoutSwim } from './renderers/swim';
+import { renderClass, layoutClass } from './renderers/class';
 import type { ScenePage } from './scene';
 
 export * from './types';
@@ -20,7 +21,7 @@ export { PROMPTS } from './prompts';
 export { buildZip, crc32 } from './zip';
 export { buildDrawio } from './drawio';
 export { paintSvg } from './paint-svg';
-export { renderER, renderUsecase, renderFunctional, renderArchitecture, renderSequence, renderFlow, renderSwim };
+export { renderER, renderUsecase, renderFunctional, renderArchitecture, renderSequence, renderFlow, renderSwim, renderClass };
 export { layoutERTotal, layoutERAttr, layoutER } from './renderers/er';
 export { layoutUsecase } from './renderers/usecase';
 export { layoutFunctional } from './renderers/functional';
@@ -28,6 +29,7 @@ export { layoutArchitecture } from './renderers/arch';
 export { layoutSequence } from './renderers/sequence';
 export { layoutFlow } from './renderers/flow';
 export { layoutSwim } from './renderers/swim';
+export { layoutClass } from './renderers/class';
 
 /** 类型 → 渲染函数（SVG） */
 export const RENDERERS: Record<DiagramType, (d: any) => Diagram[]> = {
@@ -37,7 +39,8 @@ export const RENDERERS: Record<DiagramType, (d: any) => Diagram[]> = {
   arch: renderArchitecture,
   sequence: renderSequence,
   flow: renderFlow,
-  swim: renderSwim
+  swim: renderSwim,
+  class: renderClass
 };
 
 /** 类型 → 布局函数（场景图，drawio 导出用） */
@@ -48,7 +51,8 @@ export const LAYOUTS: Record<DiagramType, (d: any) => ScenePage[]> = {
   arch: layoutArchitecture,
   sequence: layoutSequence,
   flow: layoutFlow,
-  swim: layoutSwim
+  swim: layoutSwim,
+  class: layoutClass
 };
 
 /** 按类型渲染，返回 1..N 张图 */

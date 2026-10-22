@@ -22,7 +22,8 @@ export const TYPE_LABEL: Record<DiagramType, string> = {
   arch: '系统架构图',
   sequence: '时序图',
   flow: '流程图',
-  swim: '泳道图'
+  swim: '泳道图',
+  class: '类图'
 };
 
 /** 各类型的大分区 key（用于“全部折叠”） */
@@ -33,7 +34,8 @@ export const SECTION_KEYS: Record<DiagramType, string[]> = {
   arch: ['arch:层次'],
   sequence: ['sequence:生命线', 'sequence:消息'],
   flow: ['flow:节点', 'flow:连线'],
-  swim: ['swim:泳道', 'swim:阶段', 'swim:节点', 'swim:连线']
+  swim: ['swim:泳道', 'swim:阶段', 'swim:节点', 'swim:连线'],
+  class: ['class:类', 'class:关系']
 };
 
 export const state = reactive({
@@ -46,7 +48,8 @@ export const state = reactive({
     arch: clone(SAMPLES.arch),
     sequence: clone(SAMPLES.sequence),
     flow: clone(SAMPLES.flow),
-    swim: clone(SAMPLES.swim)
+    swim: clone(SAMPLES.swim),
+    class: clone(SAMPLES.class)
   } as Record<DiagramType, any>
 });
 
@@ -63,6 +66,7 @@ export function isEmptyData(t: DiagramType, d: any): boolean {
   if (t === 'functional') return !(d.roles || []).length;
   if (t === 'arch') return !(d.layers || []).length;
   if (t === 'flow' || t === 'swim') return !(d.nodes || []).length;
+  if (t === 'class') return !(d.classes || []).length;
   return !(d.lifelines || []).length;
 }
 
@@ -129,6 +133,7 @@ export function toggleFoldAll() {
   else if (state.type === 'usecase') mark(d.usecases);
   else if (state.type === 'sequence') mark(d.messages);
   else if (state.type === 'flow' || state.type === 'swim') { mark(d.nodes); mark(d.edges); }
+  else if (state.type === 'class') { mark(d.classes); mark(d.relations); }
 }
 
 /** 切到某类型时恢复“全部折叠”的初始观感 */
@@ -147,6 +152,7 @@ export function emptyData(t: DiagramType): any {
   if (t === 'arch') return { title: '系统总体架构', layers: [] };
   if (t === 'flow') return { title: '流程图', nodes: [], edges: [] };
   if (t === 'swim') return { title: '泳道图', lanes: ['角色A', '角色B'], stages: ['阶段一', '阶段二'], nodes: [], edges: [] };
+  if (t === 'class') return { title: '类图', classes: [], relations: [] };
   return { title: '时序图', actor: '用户', lifelines: [], messages: [] };
 }
 
@@ -316,6 +322,42 @@ export function normalizeData(t: DiagramType, raw: any): any {
         ...(e.label ? { label: String(e.label) } : {}),
         ...(e.dash ? { dash: true } : {})
       }));
+    return out;
+  }
+
+  if (t === 'class') {
+    if (!Array.isArray(raw.classes)) throw new Error('缺少 classes 数组');
+    out.title = String(raw.title ?? '类图');
+    const strArr = (v: any) => (Array.isArray(v)
+      ? v.map((x: any) => String(typeof x === 'string' ? x : (x?.text ?? x?.name ?? ''))).filter(Boolean)
+      : []);
+    const used = new Set<string>();
+    out.classes = raw.classes.filter((c: any) => c && typeof c === 'object').map((c: any, i: number) => {
+      let id = String(c.id ?? c.name ?? `c${i + 1}`);
+      while (used.has(id)) id += '_';
+      used.add(id);
+      return {
+        id,
+        name: String(c.name ?? c.text ?? '未命名'),
+        ...(c.stereotype ? { stereotype: String(c.stereotype) } : {}),
+        attributes: strArr(c.attributes ?? c.attrs ?? c.fields),
+        methods: strArr(c.methods ?? c.operations),
+        col: Math.max(1, Math.round(Number(c.col) || 1)),
+        row: Math.max(1, Math.round(Number(c.row) || i + 1))
+      };
+    });
+    out.relations = (Array.isArray(raw.relations) ? raw.relations : [])
+      .filter((r: any) => r && typeof r === 'object' && r.from != null && r.to != null)
+      .map((r: any) => {
+        const kind = String(r.kind ?? r.type ?? 'association').toLowerCase();
+        return {
+          from: String(r.from),
+          to: String(r.to),
+          kind: ['extends', 'implements', 'composition', 'aggregation', 'association', 'dependency'].includes(kind)
+            ? kind : 'association',
+          ...(r.label ? { label: String(r.label) } : {})
+        };
+      });
     return out;
   }
 

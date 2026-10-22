@@ -76,7 +76,10 @@ export interface ScenePath {
   k: 'path';
   pts: number[][];
   sw?: number; stroke?: string; dash?: string;
-  arrow?: 'solid' | 'open';
+  /** 终点箭头：solid 实心三角 / open 开口箭头 / triHollow 空心三角（继承、实现） */
+  arrow?: 'solid' | 'open' | 'none' | 'triHollow';
+  /** 起点箭头：diamondFilled 实心菱形（组合）/ diamondHollow 空心菱形（聚合） */
+  startArrow?: 'diamondFilled' | 'diamondHollow';
   link?: [string | null, string | null];
   id?: string;
   ports?: EdgePorts;
@@ -135,8 +138,26 @@ export interface SceneAnchor {
   parent?: string;
 }
 
+/**
+ * 类图的类框：三段式（类名 / 属性 / 方法）。
+ * 分隔线由 painter 自己算，不进场景图 —— SVG 直接画线，
+ * drawio 侧用一个带 HTML 标签（含 `<hr>`）的单元格表达，保持"一个类 = 一个可编辑图元"。
+ */
+export interface SceneClassBox {
+  k: 'classBox';
+  x: number; y: number; w: number; h: number;
+  name: string;
+  /** 构造型，如 <<interface>>、<<abstract>> */
+  stereotype?: string;
+  attrs: string[];
+  methods: string[];
+  fill?: string; stroke?: string; sw?: number; fs?: number;
+  id?: string;
+  parent?: string;
+}
+
 export type SceneItem =
-  | SceneRect | SceneEllipse | SceneDiamond | ScenePoly
+  | SceneRect | SceneEllipse | SceneDiamond | ScenePoly | SceneClassBox
   | SceneLine | ScenePath | SceneText | SceneLabel | SceneActor | SceneAnchor;
 
 export interface Scene {

@@ -546,6 +546,80 @@ const SWIM = `${COMMON_HEAD}
 现在请根据下面的需求生成 JSON：
 【在这里粘贴你的需求，例如：员工提交报销申请，主管审批，超过 5000 元需要财务复核，财务打款后通知员工】`;
 
+/** 类图：三段式类框 + 6 种 UML 关系，位置同样由数据给 */
+const CLASS = `${COMMON_HEAD}
+
+【本图：UML 类图】
+这张图**不做自动布局**：每个类只填「第几列、第几行」，框的宽高由引擎按内容算。
+关系线会自动走正交折线，你只要说清「谁连谁、哪种关系」。
+
+【JSON 结构】
+{
+  "title": "订单模块类图",
+  "classes": [
+    {
+      "id": "Order",
+      "name": "Order",
+      "attributes": ["+ id: Long", "+ amount: BigDecimal"],
+      "methods": ["+ pay(): void"],
+      "col": 1,
+      "row": 3
+    },
+    {
+      "id": "Payment",
+      "name": "Payment",
+      "stereotype": "<<interface>>",
+      "methods": ["+ pay(order: Order): boolean"],
+      "col": 3,
+      "row": 1
+    }
+  ],
+  "relations": [
+    { "from": "Order", "to": "Payment", "kind": "association", "label": "支付方式" }
+  ]
+}
+
+【字段说明】
+- id：连线的引用名（建议直接用类名）
+- name：类名，**英文大写开头**（User、OrderService），这是类图的惯例
+- stereotype：构造型，接口写 "<<interface>>"，抽象类写 "<<abstract>>"，普通类不写
+- attributes / methods：**一行一条**，写成 UML 风格：
+  - 属性："+ id: Long"（+ 公开 / - 私有 / # 保护）
+  - 方法："+ pay(order: Order): boolean"
+- col / row：**从 1 开始的整数网格坐标**，指这个类中心落在第几格
+- relations[].kind 六选一：
+  | kind | 画出来 |
+  |---|---|
+  | extends | 实线 + 空心三角（继承） |
+  | implements | 虚线 + 空心三角（实现接口） |
+  | composition | 实线 + **实心菱形**（组合，菱形在 from 端） |
+  | aggregation | 实线 + 空心菱形（聚合，菱形在 from 端） |
+  | association | 实线（关联，常带标签） |
+  | dependency | 虚线 + 开口箭头（依赖） |
+
+【布局规则（务必遵守）】
+1. 主干**沿同一列往下**：col 统一用 1（或 2、3），row = 1、3、5…… 相邻两类之间差 2
+2. 另一侧的类（如接口、辅助类）放到 col 3 或 col 5，**同一行对齐**
+3. 继承 / 实现一般让**子类在下、父类在上**（from 子类，to 父类）
+4. 组合 / 聚合让**整体在上、部分在下**（from 整体，to 部分，菱形会画在 from 端）
+5. 不同类之间至少差 2 行或 2 列，别挤在一起
+
+【画类图的常识】
+- 类名用**单数**英文：User / Order / OrderItem，不要写「用户表」「订单表」
+- 属性写**名词 + 类型**，方法写**动词 + 参数 + 返回类型**
+- 类多的时候按模块拆成几张图，别全塞在一张里
+- 接口用 stereotype 标出来，不要在类名里写 "Interface"
+
+【输出前自检】
+- 每个类都有 id / name / col / row。
+- 每条 relation 的 from / to 都能在 classes 里找到。
+- kind 只用了上面那 6 个值。
+- 类名是英文、首字母大写。
+- JSON 完整、格式正确。
+
+现在请根据下面的需求生成 JSON：
+【在这里粘贴你的需求，例如：电商系统的订单模块，包含用户、订单、订单项、商品、支付接口以及支付宝支付实现】`;
+
 export const PROMPTS: Record<DiagramType, string> = {
   er: ER,
   usecase: USECASE,
@@ -553,5 +627,6 @@ export const PROMPTS: Record<DiagramType, string> = {
   arch: ARCH,
   sequence: SEQUENCE,
   flow: FLOW,
-  swim: SWIM
+  swim: SWIM,
+  class: CLASS
 };

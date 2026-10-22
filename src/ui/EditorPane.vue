@@ -8,6 +8,7 @@ import ArchForm from './forms/ArchForm.vue';
 import SequenceForm from './forms/SequenceForm.vue';
 import FlowForm from './forms/FlowForm.vue';
 import SwimForm from './forms/SwimForm.vue';
+import ClassForm from './forms/ClassForm.vue';
 import JsonPanel from './JsonPanel.vue';
 import PromptDialog from './PromptDialog.vue';
 import { HINTS } from '../core/samples';
@@ -24,7 +25,8 @@ const FORMS: Record<DiagramType, any> = {
   arch: ArchForm,
   sequence: SequenceForm,
   flow: FlowForm,
-  swim: SwimForm
+  swim: SwimForm,
+  class: ClassForm
 };
 const formComp = computed(() => FORMS[state.type]);
 

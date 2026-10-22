@@ -76,12 +76,18 @@ interface Ports { exit?: [number, number]; entry?: [number, number] }
 
 /** 边样式：`endArrow=none` 时为普通连线 */
 function edgeStyle(o: {
-  sw?: number; dash?: string; arrow?: 'solid' | 'open' | 'none';
+  sw?: number; dash?: string; arrow?: 'solid' | 'open' | 'none' | 'triHollow';
+  startArrow?: 'diamondFilled' | 'diamondHollow';
   stroke?: string; ports?: Ports; labelFs?: number; ortho?: boolean; html?: boolean;
 }): string {
   let head = 'endArrow=none;';
   if (o.arrow === 'solid') head = 'endArrow=block;endFill=1;endSize=7;';
   else if (o.arrow === 'open') head = 'endArrow=open;endFill=0;endSize=8;';
+  // 继承 / 实现：空心三角
+  else if (o.arrow === 'triHollow') head = 'endArrow=block;endFill=0;endSize=10;';
+  // 组合（实心菱形）/ 聚合（空心菱形）：菱形画在起点，也就是“整体”那一端
+  if (o.startArrow === 'diamondFilled') head += 'startArrow=diamondThin;startFill=1;startSize=12;';
+  else if (o.startArrow === 'diamondHollow') head += 'startArrow=diamondThin;startFill=0;startSize=12;';
   // 正交路由：拖动端点后 draw.io 会自动重排直角，而不是拉成斜线
   // html=0：标签里有尖括号（如 <<include>>）时必须关掉 HTML 渲染，
   // 否则 draw.io 会把 <<include>> 当成未知标签吞掉，只剩一个 "<>"
@@ -156,8 +162,31 @@ function cellXml(c: Cell): string {
   return `<mxCell ${attrs.join(' ')}>${geo}</mxCell>`;
 }
 
+/** 类框里的文字要先做 **HTML** 转义：否则 `<<interface>>`、`List<Order>` 会被当成标签吞掉 */
+function htmlText(s: unknown): string {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
+ * 类框的 HTML 标签：类名居中加粗，属性/方法左对齐，三段之间用 `<hr>` 分隔。
+ * 返回的是**已做 XML 转义**的字符串（esc 一次，drawio 解析后会还原成真标签）。
+ */
+function classBoxHtml(it: any): string {
+  const parts: string[] = [];
+  if (it.stereotype) parts.push(`<div style="text-align:center;font-size:11px;">${htmlText(it.stereotype)}</div>`);
+  parts.push(`<div style="text-align:center;"><b>${htmlText(it.name)}</b></div>`);
+  parts.push('<hr size="1">');
+  (it.attrs || []).forEach((a: string) => parts.push(`<div style="text-align:left;">${htmlText(a)}</div>`));
+  parts.push('<hr size="1">');
+  (it.methods || []).forEach((m: string) => parts.push(`<div style="text-align:left;">${htmlText(m)}</div>`));
+  return esc(parts.join(''));
+}
+
 const isVertex = (it: SceneItem): boolean =>
-  it.k === 'rect' || it.k === 'ellipse' || it.k === 'diamond' || it.k === 'polygon' || it.k === 'actor' || it.k === 'anchor';
+  it.k === 'rect' || it.k === 'ellipse' || it.k === 'diamond' || it.k === 'polygon' || it.k === 'classBox' || it.k === 'actor' || it.k === 'anchor';
 const isEdge = (it: SceneItem): boolean => it.k === 'line' || it.k === 'path';
 
 /** 顶点在画布上的绝对包围盒（子元素换算相对坐标要用） */
@@ -165,6 +194,7 @@ function absBoxOf(it: SceneItem): { x: number; y: number; w: number; h: number }
   if (it.k === 'rect') return { x: it.x, y: it.y, w: it.w, h: it.h };
   if (it.k === 'ellipse') return { x: it.cx - it.rx, y: it.cy - it.ry, w: it.rx * 2, h: it.ry * 2 };
   if (it.k === 'diamond') return { x: it.cx - it.w / 2, y: it.cy - it.h / 2, w: it.w, h: it.h };
+  if (it.k === 'classBox') return { x: it.x, y: it.y, w: it.w, h: it.h };
   if (it.k === 'polygon') {
     const xs = it.pts.map(p => p[0]), ys = it.pts.map(p => p[1]);
     const x = Math.min(...xs), y = Math.min(...ys);
@@ -238,6 +268,14 @@ function sceneCells(sc: Scene): Cell[] {
         }),
         x: bx, y: by, w: Math.max(...xs) - x0, h: Math.max(...ys) - y0
       });
+    } else if (it.k === 'classBox') {
+      // 一个类 = 一个单元格，三段式靠 HTML 标签里的 <hr> 分隔（这样拖动时是一个整体）
+      out.push({
+        id, vertex: true, value: classBoxHtml(it), parent: parentId,
+        style: shapeStyle({ fill: it.fill, stroke: it.stroke, sw: it.sw, fs: it.fs ?? 13 })
+          + 'align=center;verticalAlign=top;spacing=2;spacingLeft=6;spacingRight=6;',
+        x: bx, y: by, w: it.w, h: it.h
+      });
     } else if (it.k === 'actor') {
       const s = it.scale ?? 1;
       // 火柴人不把角色名放进 value：draw.io 会把名字画在小人腿上，这里单独出一个文字单元格
@@ -285,6 +323,7 @@ function sceneCells(sc: Scene): Cell[] {
         id: nextId('e'), edge: true,
         style: edgeStyle({
           sw: it.sw, dash: it.dash, arrow: it.k === 'path' ? (it.arrow ?? 'none') : 'none',
+          startArrow: it.k === 'path' ? (it as any).startArrow : undefined,
           ports: (it as any).ports, labelFs: lab ? lab.fs : undefined,
           ortho: it.k === 'path' && (it as any).route === 'ortho',
           // 含尖括号的标签（<<include>>）必须走纯文本渲染
